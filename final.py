@@ -22,6 +22,7 @@ class Input(tk.Frame):
         self.resistor_vals = [
             tk.StringVar(),
             tk.StringVar(),
+            tk.StringVar(),
             tk.StringVar()
         ]
 
@@ -33,6 +34,8 @@ class Input(tk.Frame):
         
         self.beta = tk.StringVar()
         self.vcc = tk.StringVar()
+        self.r_out = tk.StringVar()
+        self.r_in = tk.StringVar()
         self.create_widgets()
 
     def create_widgets(self):
@@ -73,13 +76,20 @@ class Input(tk.Frame):
         self.r_e = tk.Entry(self, textvariable=self.resistor_vals[0])
         self.r_e.grid(column=1, row=currentRow, padx=1 )
         currentRow += 1
-        self.r_b_label = tk.Label(self)
-        self.r_b_label['text'] = 'Rb (kΩ)'
-        self.r_b_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.r_b1_label = tk.Label(self)
+        self.r_b1_label['text'] = 'Rb1 (kΩ)'
+        self.r_b1_label.grid(column=0, row=currentRow, padx=10, pady=10)
 
-        self.r_b = tk.Entry(self, textvariable=self.resistor_vals[1])
-        self.r_b.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.r_b1 = tk.Entry(self, textvariable=self.resistor_vals[1])
+        self.r_b1.grid(column=1, row=currentRow, padx=10, pady=10)
 
+        currentRow += 1
+        self.r_b2_label = tk.Label(self)
+        self.r_b2_label['text'] = 'Rb2 (kΩ)'
+        self.r_b2_label.grid(column=0, row=currentRow, padx=10, pady=10)
+
+        self.r_b2 = tk.Entry(self, textvariable=self.resistor_vals[3])
+        self.r_b2.grid(column=1, row=currentRow, padx=10, pady=10)
         currentRow += 1
         self.r_c_label = tk.Label(self)
         self.r_c_label['text'] = 'Rc (kΩ)'
@@ -138,6 +148,22 @@ class Input(tk.Frame):
         self.v_b.grid(column=1, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
+        self.r_out_label = tk.Label(self)
+        self.r_out_label['text'] = 'Rout'
+        self.r_out_label.grid(column=0, row=currentRow, padx=10, pady=10)
+
+        self.r_out = tk.Entry(self, textvariable=self.r_out)
+        self.r_out.grid(column=1, row=currentRow, padx=10, pady=10)
+
+        currentRow += 1
+        self.r_in_label = tk.Label(self)
+        self.r_in_label['text'] = 'Rout'
+        self.r_in_label.grid(column=0, row=currentRow, padx=10, pady=10)
+
+        self.r_in = tk.Entry(self, textvariable=self.r_in)
+        self.r_in.grid(column=1, row=currentRow, padx=10, pady=10)
+
+        currentRow += 1
         self.calc = tk.Button(self, text='CACLCULATE!',
                               fg='green', command=self.calc_circuit)
         self.calc.grid(column=0, row=currentRow, padx=10, pady=10)
@@ -151,10 +177,16 @@ class Input(tk.Frame):
         vcc = float(self.vcc.get())
         beta = float(self.beta.get())
         r_e = float(self.resistor_vals[0].get())
-        r_b = float(self.resistor_vals[1].get())
+        r_b1 = float(self.resistor_vals[1].get())
         r_c = float(self.resistor_vals[2].get())
+        r_b2 = float(self.resistor_vals[3].get())
 
-        i_b = (vcc - 0.7)/(r_b+(1+beta)*r_e)
+        if r_b1 > 0 and r_b2 > 0:
+           pass
+        elif r_b1 > 0 and r_b2 <= 0:    
+            i_b = (vcc - 0.7)/(r_b1+(1+beta)*r_e)
+        else:
+            i_b = (vcc - 0.7)/(r_b2+(1+beta)*r_e)
         i_e = (1+beta) * i_b
         i_c = (beta) * i_b
 
@@ -171,12 +203,21 @@ class Input(tk.Frame):
             v_c = vcc
         else: # "CB"
             v_c = vcc - i_c * r_c
-    
+
         self.voltage_vals[0].set(round(v_c, 3))
         self.voltage_vals[1].set(round(v_e, 3))
         self.voltage_vals[2].set(round(v_b, 3))
-
         
+        r_pi = .0259 / i_b
+        gm = i_c / .0259
+
+        if circ_type == "CE":
+            A_v = -gm * r_c 
+        elif circ_type == "CC":
+            A_v = ((1 +beta)*r_e)/(r_pi + (1+beta)*r_e) 
+        else:
+            A_v = gm * r_c 
+
 
     def set_r_c_vis(self, args):
         circ_type = self.circuit_type.get()
@@ -185,17 +226,7 @@ class Input(tk.Frame):
         else:
             self.r_c.grid(column=1, row=6, padx=10, pady=10)
 
-    def calc_hybrid_pi(self, i_b: float, i_c: float):
-        circ_type = self.circuit_type.get()
-        r_pi = .0259 / i_b
-        gm = i_c / .0259
-
-        if circ_type == "CE":
-            pass
-        elif circ_type == "CC":
-            pass
-        else: # "CB"
-            pass
+        
 
 class CircImages(tk.Frame):
     def __init__(self, master=None):
