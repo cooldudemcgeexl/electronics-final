@@ -1,9 +1,16 @@
 import tkinter as tk
 from tkinter.constants import DISABLED, NORMAL
 from PIL import Image, ImageTk
+from matplotlib import figure
 from src.ParallelDiv import parallel_divide
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure 
+import numpy as np
+
+
 root = tk.Tk()
 root.geometry('1280x720')
+root.title('BJT Simulator')
 
 
 class Input(tk.Frame):
@@ -31,11 +38,13 @@ class Input(tk.Frame):
             tk.StringVar(),
             tk.StringVar()
         ]
-        
+
         self.beta = tk.StringVar()
         self.vcc = tk.StringVar()
         self.r_out = tk.StringVar()
         self.r_in = tk.StringVar()
+        self.a_v = tk.StringVar()
+
         self.create_widgets()
 
     def create_widgets(self):
@@ -74,7 +83,7 @@ class Input(tk.Frame):
         self.r_e_label.grid(column=0, row=currentRow, padx=10, pady=10)
 
         self.r_e = tk.Entry(self, textvariable=self.resistor_vals[0])
-        self.r_e.grid(column=1, row=currentRow, padx=1 )
+        self.r_e.grid(column=1, row=currentRow, padx=1)
         currentRow += 1
         self.r_b1_label = tk.Label(self)
         self.r_b1_label['text'] = 'Rb1 (kΩ)'
@@ -98,79 +107,94 @@ class Input(tk.Frame):
         self.r_c = tk.Entry(self, textvariable=self.resistor_vals[2])
         self.r_c.grid(column=1, row=currentRow, padx=10, pady=10)
 
+        currentRow = 0
+        self.input_label = tk.Label(self, text='Outputs:')
+        self.input_label.grid(columnspan=2, column=2,
+                              row=currentRow, padx=10, pady=10)
         currentRow += 1
         self.i_e_label = tk.Label(self)
         self.i_e_label['text'] = 'Ie (mA)'
-        self.i_e_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.i_e_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.i_e = tk.Entry(self, textvariable=self.current_vals[0])
-        self.i_e.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.i_e.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.i_b_label = tk.Label(self)
         self.i_b_label['text'] = 'Ib (μA)'
-        self.i_b_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.i_b_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.i_b = tk.Entry(self, textvariable=self.current_vals[1])
-        self.i_b.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.i_b.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.i_c_label = tk.Label(self)
         self.i_c_label['text'] = 'Ic (mA)'
-        self.i_c_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.i_c_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.i_c = tk.Entry(
             self, textvariable=self.current_vals[2], state=DISABLED)
-        self.i_c.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.i_c.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.v_c_label = tk.Label(self)
         self.v_c_label['text'] = 'Vc'
-        self.v_c_label.grid(column=0, row=currentRow, padx=20, pady=20)
+        self.v_c_label.grid(column=2, row=currentRow, padx=20, pady=20)
 
         self.v_c = tk.Entry(self, textvariable=self.voltage_vals[0])
-        self.v_c.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.v_c.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.v_e_label = tk.Label(self)
         self.v_e_label['text'] = 'Ve'
-        self.v_e_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.v_e_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.v_e = tk.Entry(self, textvariable=self.voltage_vals[1])
-        self.v_e.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.v_e.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.v_b_label = tk.Label(self)
         self.v_b_label['text'] = 'Vb'
-        self.v_b_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.v_b_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.v_b = tk.Entry(self, textvariable=self.voltage_vals[2])
-        self.v_b.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.v_b.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.r_out_label = tk.Label(self)
         self.r_out_label['text'] = 'Rout'
-        self.r_out_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.r_out_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.r_out = tk.Entry(self, textvariable=self.r_out)
-        self.r_out.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.r_out.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.r_in_label = tk.Label(self)
-        self.r_in_label['text'] = 'Rout'
-        self.r_in_label.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.r_in_label['text'] = 'Rin'
+        self.r_in_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
         self.r_in = tk.Entry(self, textvariable=self.r_in)
-        self.r_in.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.r_in.grid(column=3, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
         self.calc = tk.Button(self, text='CACLCULATE!',
                               fg='green', command=self.calc_circuit)
-        self.calc.grid(column=0, row=currentRow, padx=10, pady=10)
+        self.calc.grid(column=0, columnspan=2,
+                       row=currentRow, padx=10, pady=10)
 
         self.quit = tk.Button(self, text="QUIT", fg="red",
                               command=self.master.destroy)
-        self.quit.grid(column=1, row=currentRow, padx=10, pady=10)
+        self.quit.grid(column=2, columnspan=2,
+                       row=currentRow, padx=10, pady=10)
+
+        self.av_label = tk.Label(self, text="Av")
+        self.av_label.grid(column=4, columnspan=2, row=1, padx=10, pady=10)
+
+        self.av = tk.Entry(self, textvariable=self.a_v)
+        self.av.grid(column=6, columnspan=2, row=1, padx=10, pady=10)
+
+        self.draw_av_graph()
+        
 
     def calc_circuit(self):
         circ_type = self.circuit_type.get()
@@ -182,8 +206,10 @@ class Input(tk.Frame):
         r_b2 = float(self.resistor_vals[3].get())
 
         if r_b1 > 0 and r_b2 > 0:
-           pass
-        elif r_b1 > 0 and r_b2 <= 0:    
+            v_th = (r_b2/(r_b1+r_b2))*vcc
+            r_bth = parallel_divide([r_b1, r_b2])
+            i_b = (v_th - 0.7)/(r_bth+(1+beta)*r_e)
+        elif r_b1 > 0 and r_b2 <= 0:
             i_b = (vcc - 0.7)/(r_b1+(1+beta)*r_e)
         else:
             i_b = (vcc - 0.7)/(r_b2+(1+beta)*r_e)
@@ -201,32 +227,53 @@ class Input(tk.Frame):
             v_c = vcc - i_c * r_c
         elif circ_type == "CC":
             v_c = vcc
-        else: # "CB"
+        else:  # "CB"
             v_c = vcc - i_c * r_c
 
         self.voltage_vals[0].set(round(v_c, 3))
         self.voltage_vals[1].set(round(v_e, 3))
         self.voltage_vals[2].set(round(v_b, 3))
-        
+
         r_pi = .0259 / i_b
         gm = i_c / .0259
 
         if circ_type == "CE":
-            A_v = -gm * r_c 
+            A_v = -gm * r_c
         elif circ_type == "CC":
-            A_v = ((1 +beta)*r_e)/(r_pi + (1+beta)*r_e) 
+            A_v = ((1 + beta)*r_e)/(r_pi + (1+beta)*r_e)
         else:
-            A_v = gm * r_c 
+            A_v = gm * r_c
 
+        self.a_v.set(A_v)
+        self.draw_av_graph(A_v)
 
     def set_r_c_vis(self, args):
         circ_type = self.circuit_type.get()
         if circ_type == "CC":
             self.r_c.grid_forget()
         else:
-            self.r_c.grid(column=1, row=6, padx=10, pady=10)
-
+            self.r_c.grid(column=1, row=7, padx=10, pady=10)
+    
+    def draw_av_graph(self, A_v = None):
+        av_graph = Figure()
+        av_plot = av_graph.add_subplot(111)
         
+        if A_v is not None:
+            time, input_signal, output_vals = self.create_av_vals(A_v)
+            av_plot.plot(time,input_signal)
+            av_plot.plot(time,output_vals)
+        else:
+            av_plot.plot()
+        canvas = FigureCanvasTkAgg(av_graph, self)
+        canvas.get_tk_widget().grid(row=6,column=6)
+
+    def create_av_vals(self, A_v):
+        time = np.arange(0,10,0.1)
+        input_vals = np.sin(time)
+        output_vals = A_v * input_vals
+        return (time, input_vals, output_vals)
+
+
 
 class CircImages(tk.Frame):
     def __init__(self, master=None):
@@ -237,15 +284,16 @@ class CircImages(tk.Frame):
 
         label = tk.Label(image=test)
         label.image = test
-        label.grid(row=0,column=4, columnspan=2)
+        label.grid(row=1, column=1 )
+
 
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         app1 = Input(master=root)
-        app1.grid(rowspan=2,row=0, column=0)
+        app1.grid(rowspan=2, row=0, column=0)
         circImg = CircImages(master=root)
-        circImg.grid(row=0,column=3)
+        circImg.grid(row=1, column=4)
 
 
 app = Application(master=root)
