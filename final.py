@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter.constants import DISABLED, NORMAL
 from PIL import Image, ImageTk
 from matplotlib import figure
+import matplotlib
+from numpy.core.fromnumeric import size
 from src.ParallelDiv import parallel_divide
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
 from matplotlib.figure import Figure 
 import numpy as np
 
@@ -17,7 +19,6 @@ class Input(tk.Frame):
     def __init__(self, master=None) -> None:
         super().__init__(master)
         self.master = master
-        self.pack()
 
         self.circuit_type = tk.StringVar()
         self.circuit_type.set('CE')
@@ -41,8 +42,6 @@ class Input(tk.Frame):
 
         self.beta = tk.StringVar()
         self.vcc = tk.StringVar()
-        self.r_out = tk.StringVar()
-        self.r_in = tk.StringVar()
         self.a_v = tk.StringVar()
 
         self.create_widgets()
@@ -58,7 +57,7 @@ class Input(tk.Frame):
         self.input_label.grid(column=0,
                               row=currentRow, padx=10, pady=10)
         self.circuit_type_ddl = tk.OptionMenu(
-            self, self.circuit_type, 'CE', 'CC', 'CB', command=self.set_r_c_vis)
+            self, self.circuit_type, 'CE', 'CC', 'CB', command=self.update_elements)
         self.circuit_type_ddl.grid(column=1, row=currentRow, padx=10, pady=10)
 
         currentRow += 1
@@ -107,6 +106,11 @@ class Input(tk.Frame):
         self.r_c = tk.Entry(self, textvariable=self.resistor_vals[2])
         self.r_c.grid(column=1, row=currentRow, padx=10, pady=10)
 
+        currentRow += 1
+        self.calc = tk.Button(self, text='CACLCULATE!',
+                              fg='green', command=self.calc_circuit)
+        self.calc.grid(column=0, columnspan=2,
+                       row=currentRow, padx=10, pady=10)
         currentRow = 0
         self.input_label = tk.Label(self, text='Outputs:')
         self.input_label.grid(columnspan=2, column=2,
@@ -160,27 +164,8 @@ class Input(tk.Frame):
         self.v_b = tk.Entry(self, textvariable=self.voltage_vals[2])
         self.v_b.grid(column=3, row=currentRow, padx=10, pady=10)
 
-        currentRow += 1
-        self.r_out_label = tk.Label(self)
-        self.r_out_label['text'] = 'Rout'
-        self.r_out_label.grid(column=2, row=currentRow, padx=10, pady=10)
 
-        self.r_out = tk.Entry(self, textvariable=self.r_out)
-        self.r_out.grid(column=3, row=currentRow, padx=10, pady=10)
-
-        currentRow += 1
-        self.r_in_label = tk.Label(self)
-        self.r_in_label['text'] = 'Rin'
-        self.r_in_label.grid(column=2, row=currentRow, padx=10, pady=10)
-
-        self.r_in = tk.Entry(self, textvariable=self.r_in)
-        self.r_in.grid(column=3, row=currentRow, padx=10, pady=10)
-
-        currentRow += 1
-        self.calc = tk.Button(self, text='CACLCULATE!',
-                              fg='green', command=self.calc_circuit)
-        self.calc.grid(column=0, columnspan=2,
-                       row=currentRow, padx=10, pady=10)
+        currentRow += 2
 
         self.quit = tk.Button(self, text="QUIT", fg="red",
                               command=self.master.destroy)
@@ -188,10 +173,18 @@ class Input(tk.Frame):
                        row=currentRow, padx=10, pady=10)
 
         self.av_label = tk.Label(self, text="Av")
-        self.av_label.grid(column=4, columnspan=2, row=1, padx=10, pady=10)
+        self.av_label.grid(column=4,  row=1, padx=10, pady=10)
 
         self.av = tk.Entry(self, textvariable=self.a_v)
-        self.av.grid(column=6, columnspan=2, row=1, padx=10, pady=10)
+        self.av.grid(column=5,  row=1, padx=10, pady=10)
+
+        image = Image.open('images/CE.png')
+        image = image.resize([int(image.width/2),int(image.height/2)])
+        test = ImageTk.PhotoImage(image)
+
+        self.circ_diagram = tk.Label(self, image=test)
+        self.circ_diagram.image = test
+        self.circ_diagram.grid(row=10, rowspan=10, column=4, columnspan=4)
 
         self.draw_av_graph()
         
@@ -247,7 +240,11 @@ class Input(tk.Frame):
         self.a_v.set(A_v)
         self.draw_av_graph(A_v)
 
-    def set_r_c_vis(self, args):
+    def update_elements(self, args):
+        self.set_r_c_vis()
+        self.draw_circ_diagram()
+
+    def set_r_c_vis(self):
         circ_type = self.circuit_type.get()
         if circ_type == "CC":
             self.r_c.grid_forget()
@@ -264,8 +261,9 @@ class Input(tk.Frame):
             av_plot.plot(time,output_vals)
         else:
             av_plot.plot()
+        
         canvas = FigureCanvasTkAgg(av_graph, self)
-        canvas.get_tk_widget().grid(row=6,column=6)
+        canvas.get_tk_widget().grid(row=2, rowspan=8, column=4, columnspan=4)
 
     def create_av_vals(self, A_v):
         time = np.arange(0,10,0.1)
@@ -273,27 +271,23 @@ class Input(tk.Frame):
         output_vals = A_v * input_vals
         return (time, input_vals, output_vals)
 
-
-
-class CircImages(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        image = Image.open('images/test.png')
-        #image = image.resize([1000,1000],0)
+    def draw_circ_diagram(self):
+        self.circ_diagram.grid_forget()
+        circ_type = self.circuit_type.get()
+        image = Image.open(f'images/{circ_type}.png')
+        image = image.resize([int(image.width/2),int(image.height/2)])
         test = ImageTk.PhotoImage(image)
 
-        label = tk.Label(image=test)
-        label.image = test
-        label.grid(row=1, column=1 )
-
+        self.circ_diagram = tk.Label(self, image=test)
+        self.circ_diagram.image = test
+        self.circ_diagram.grid(row=10, rowspan=10, column=4, columnspan=4)
 
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         app1 = Input(master=root)
         app1.grid(rowspan=2, row=0, column=0)
-        circImg = CircImages(master=root)
-        circImg.grid(row=1, column=4)
+        
 
 
 app = Application(master=root)
