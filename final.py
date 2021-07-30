@@ -2,11 +2,9 @@ import tkinter as tk
 from tkinter.constants import DISABLED, NORMAL
 from PIL import Image, ImageTk
 from matplotlib import figure
-import matplotlib
-from numpy.core.fromnumeric import size
 from src.ParallelDiv import parallel_divide
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
-from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import numpy as np
 
 
@@ -164,7 +162,6 @@ class Input(tk.Frame):
         self.v_b = tk.Entry(self, textvariable=self.voltage_vals[2])
         self.v_b.grid(column=3, row=currentRow, padx=10, pady=10)
 
-
         currentRow += 2
 
         self.quit = tk.Button(self, text="QUIT", fg="red",
@@ -179,7 +176,7 @@ class Input(tk.Frame):
         self.av.grid(column=5,  row=1, padx=10, pady=10)
 
         image = Image.open('images/CE.png')
-        image = image.resize([int(image.width/2),int(image.height/2)])
+        image = image.resize([int(image.width/2), int(image.height/2)])
         test = ImageTk.PhotoImage(image)
 
         self.circ_diagram = tk.Label(self, image=test)
@@ -187,7 +184,6 @@ class Input(tk.Frame):
         self.circ_diagram.grid(row=10, rowspan=10, column=4, columnspan=4)
 
         self.draw_av_graph()
-        
 
     def calc_circuit(self):
         circ_type = self.circuit_type.get()
@@ -197,6 +193,9 @@ class Input(tk.Frame):
         r_b1 = float(self.resistor_vals[1].get())
         r_c = float(self.resistor_vals[2].get())
         r_b2 = float(self.resistor_vals[3].get())
+
+        if r_e < 1:
+            r_e = 0.5
 
         if r_b1 > 0 and r_b2 > 0:
             v_th = (r_b2/(r_b1+r_b2))*vcc
@@ -217,7 +216,7 @@ class Input(tk.Frame):
         v_b = v_e + .7
 
         if circ_type == "CE":
-            v_c = vcc - i_c * r_c
+            v_c = vcc - (i_c * r_c)
         elif circ_type == "CC":
             v_c = vcc
         else:  # "CB"
@@ -235,7 +234,7 @@ class Input(tk.Frame):
         elif circ_type == "CC":
             A_v = ((1 + beta)*r_e)/(r_pi + (1+beta)*r_e)
         else:
-            A_v = gm * r_c
+            A_v = r_c / r_e * (beta / (beta+1))
 
         self.a_v.set(A_v)
         self.draw_av_graph(A_v)
@@ -250,23 +249,23 @@ class Input(tk.Frame):
             self.r_c.grid_forget()
         else:
             self.r_c.grid(column=1, row=7, padx=10, pady=10)
-    
-    def draw_av_graph(self, A_v = None):
+
+    def draw_av_graph(self, A_v=None):
         av_graph = Figure()
         av_plot = av_graph.add_subplot(111)
-        
+
         if A_v is not None:
             time, input_signal, output_vals = self.create_av_vals(A_v)
-            av_plot.plot(time,input_signal)
-            av_plot.plot(time,output_vals)
+            av_plot.plot(time, input_signal)
+            av_plot.plot(time, output_vals)
         else:
             av_plot.plot()
-        
+
         canvas = FigureCanvasTkAgg(av_graph, self)
         canvas.get_tk_widget().grid(row=2, rowspan=8, column=4, columnspan=4)
 
     def create_av_vals(self, A_v):
-        time = np.arange(0,10,0.1)
+        time = np.arange(0, 10, 0.1)
         input_vals = np.sin(time)
         output_vals = A_v * input_vals
         return (time, input_vals, output_vals)
@@ -275,19 +274,19 @@ class Input(tk.Frame):
         self.circ_diagram.grid_forget()
         circ_type = self.circuit_type.get()
         image = Image.open(f'images/{circ_type}.png')
-        image = image.resize([int(image.width/2),int(image.height/2)])
+        image = image.resize([int(image.width/2), int(image.height/2)])
         test = ImageTk.PhotoImage(image)
 
         self.circ_diagram = tk.Label(self, image=test)
         self.circ_diagram.image = test
         self.circ_diagram.grid(row=10, rowspan=10, column=4, columnspan=4)
 
+
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         app1 = Input(master=root)
         app1.grid(rowspan=2, row=0, column=0)
-        
 
 
 app = Application(master=root)
